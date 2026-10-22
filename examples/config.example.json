@@ -1,0 +1,7 @@
+{
+  "api_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+  "model": "glm-5.3",
+  "api_key": "",
+  "default_style": "浅易文言",
+  "default_requirements": ""
+}

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WenyanTranslator 文言发信助手 - README</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+            margin-top: 30px;
+        }
+        h3 {
+            margin-top: 20px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", monospace;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background: #f4f4f4;
+        }
+        blockquote {
+            border-left: 4px solid #ddd;
+            margin: 15px 0;
+            padding: 10px 20px;
+            background: #f9f9f9;
+        }
+        .header-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .screenshot-placeholder {
+            border: 2px dashed #999;
+            padding: 40px;
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+        }
+        @media print {
+            body {
+                margin: 20px;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <strong>打印说明：</strong>按 Ctrl+P，选择"另存为 PDF"，保存到 D:\ChatGPT\README.pdf
+    </div>
+
+    <h1>WenyanTranslator 文言发信助手</h1>
+
+    <div class="header-info">
+        <p><strong>作者</strong>：陈桢一（2600013636） 工学院</p>
+        <p><strong>项目类型</strong>：Windows 桌面工具 / 现代汉语到文言文转换</p>
+        <p><strong>仓库</strong>：https://github.com/benzhenpku/WenyanTranslator</p>
+        <p><strong>最终版本</strong>：v2.0（具体 commit 见仓库标签与提交记录）</p>
+    </div>
+
+    <h2>一、项目背景与目标</h2>
+
+    <p>在微信、QQ 等聊天软件中，偶尔把现代汉语改成文言文会增加表达的趣味，也能作为古典语文学习的辅助练习。手工翻译既慢又容易前后风格不一致，因此本项目把"调用大模型翻译、检查错误、复制到剪贴板"串成一个可重复使用的桌面流程。</p>
+
+    <p>项目目标：</p>
+    <ol>
+        <li>提供浅易、典雅、庄重、艰深古奥四种文风。</li>
+        <li>将现代文粘贴到窗口后翻译，成功时自动复制译文。</li>
+        <li>支持补充要求，例如"保留人名和数字""不要使用生僻字"。</li>
+        <li>保留换行、数字、专有名词等关键信息，不输出解释或多余前缀。</li>
+        <li>将 API 配置保存在项目目录，不把密钥写入仓库。</li>
+    </ol>
+
+    <p>本项目<strong>不会自动发送消息</strong>。它只生成并复制译文，发送动作仍由用户在聊天软件中完成；快捷替换也只是模拟键盘操作，不会绕过聊天软件的发送确认。</p>
+
+    <h2>二、功能概览</h2>
+
+    <ul>
+        <li>原文输入与译文输出均为可滚动的纯文本框。</li>
+        <li>支持四种文风：
+            <ul>
+                <li><strong>浅易文言</strong>：清楚易懂，少用生僻字。</li>
+                <li><strong>典雅文言</strong>：措辞雅洁，略带古典韵致。</li>
+                <li><strong>庄重文言</strong>：语气庄重，句法谨严。</li>
+                <li><strong>艰深古奥</strong>：使用生僻字、古字、典故和先秦两汉式句法，但保持可断读。</li>
+            </ul>
+        </li>
+        <li>翻译成功后自动写入剪贴板，并提示"已复制，可粘贴到聊天框"。</li>
+        <li>"再次复制"按钮方便在复制其他内容后重新取回译文。</li>
+        <li>可开启"自动翻译剪贴板"：复制一段新文字后自动翻译并更新剪贴板。</li>
+        <li>设置可保存并自动恢复：接口地址、模型名、API Key、默认文风、默认补充要求。</li>
+        <li>网络错误、HTTP 错误、超时、响应 JSON 异常、空译文都有明确提示。</li>
+    </ul>
+
+    <h2>三、课程知识与核心设计</h2>
+
+    <h3>3.1 项目结构</h3>
+
+    <pre><code>WenyanTranslator/
+├── wenyan_translator.pyw   # 主程序（GUI + 核心逻辑）
+├── config.json             # 本地配置（已加入 .gitignore，不提交到仓库）
+├── start.bat               # 双击启动脚本
+├── requirements.txt        # 依赖说明（本项目无第三方依赖）
+├── LICENSE                 # MIT 许可证
+├── .gitignore              # 排除 config.json、hotkey.log 等
+├── examples/
+│   ├── sample_input.txt    # 示例输入
+│   ├── sample_output.txt   # 四文风真实输出样例
+│   └── config.example.json # 不含 API Key 的配置字段示例
+├── tests/
+│   └── test_wenyan_translator.py  # 接口地址、提示词、异常与边界测试
+└── README.md               # 本文件</code></pre>
+
+    <p>程序采用单文件组织，但内部按职责分为几个清晰的部分：</p>
+
+    <ul>
+        <li><strong>提示词与文风</strong>：<code>STYLES</code> 字典和 <code>SYSTEM_PROMPT</code> 常量，负责构造给模型的指令。</li>
+        <li><strong>HTTP 请求与响应解析</strong>：<code>request_translation()</code> 和 <code>normalize_endpoint()</code>，负责调用接口、解析 JSON、统一异常。</li>
+        <li><strong>配置读写</strong>：<code>load_config()</code> 和 <code>write_config()</code>，负责从 <code>config.json</code> 读取和保存设置。</li>
+        <li><strong>GUI 界面</strong>：<code>WenyanTranslatorApp</code> 类，负责界面布局、按钮回调、线程调度。</li>
+        <li><strong>Windows API 交互</strong>：<code>send_key_combo()</code>、<code>activate_window()</code> 等，负责快捷键注册和窗口焦点控制。</li>
+    </ul>
+
+    <p>这种"单文件内部分层"的方式避免了"所有逻辑都写在按钮回调里"的常见问题，核心翻译逻辑不依赖 tkinter，便于理解和测试。</p>
+
+    <h3>3.2 提示词与文风选择</h3>
+
+    <p><code>STYLES</code> 是一个字典，保存"文风名称 -> 文风说明"的映射。选择文风时通过 <code>dict</code> 查找，时间复杂度为 <strong>O(1)</strong>；未知文风会回退到默认文风。构造用户提示词时，把文风说明、补充要求、原文放进带标签的文本块：</p>
+
+    <pre><code>文风：典雅文言
+文风说明：措辞雅洁，结构工整，略带古典韵致。
+补充要求：无
+
+现代文原文：
+&lt;original_text&gt;
+……
+&lt;/original_text&gt;</code></pre>
+
+    <p>系统提示词要求模型只返回译文，不添加解释、标题、引号或代码块，并明确要求保留人名、地名、数字、标点和段落换行。这样可以把"格式约束"和"本次内容"分开，减少把提示词误当成正文的风险。</p>
+
+    <h3>3.3 HTTP 请求与 JSON 解析</h3>
+
+    <p>项目只使用 Python 标准库 <code>urllib.request</code>，不引入第三方依赖。请求流程为：</p>
+
+    <ol>
+        <li><code>normalize_endpoint()</code> 补全 <code>/chat/completions</code>；</li>
+        <li>将模型名、系统提示词、用户提示词、<code>temperature</code>、<code>reasoning_effort</code> 序列化为 UTF-8 JSON；</li>
+        <li>以 <code>Authorization: Bearer &lt;API Key&gt;</code> 发送 POST；</li>
+        <li>解析 <code>choices[0].message.content</code>，去掉首尾空白；</li>
+        <li>将可向用户解释的异常统一包装为 <code>TranslationError</code>。</li>
+    </ol>
+
+    <p>构造请求和读取响应的主要工作量与输入长度 <strong>n</strong> 成正比，即 <strong>O(n)</strong>。项目不把 API Key 写进代码、README、测试或 Git；它只保存在本地 <code>config.json</code>，该文件已被 <code>.gitignore</code> 排除。</p>
+
+    <h3>3.4 线程与事件队列</h3>
+
+    <p>一次翻译可能需要数秒。如果把 HTTP 调用直接放在 tkinter 主线程，窗口会卡住，用户无法拖动或点击。程序采用：</p>
+
+    <ul>
+        <li><code>threading.Thread</code> 在后台执行 HTTP 请求和 JSON 解析；</li>
+        <li>tkinter 的 <code>after(100, ...)</code> 在主线程轮询并更新界面；</li>
+        <li>请求完成后由主线程更新文本框和剪贴板。</li>
+    </ul>
+
+    <p>这样 GUI 的 Tk 对象始终只在主线程中访问，避免跨线程直接操作界面造成随机崩溃。快捷替换时，全局热键线程也只把"热键被按下"的事件放入队列，再由主线程处理窗口和剪贴板。</p>
+
+    <h3>3.5 Windows API 交互</h3>
+
+    <p>快捷替换是可选增强功能，涉及以下 Win32 API：</p>
+
+    <ul>
+        <li><code>RegisterHotKey</code> / <code>GetMessageW</code>：注册和接收 <code>Ctrl+Alt+M</code>；</li>
+        <li><code>GetForegroundWindow</code>：识别当前聊天窗口；</li>
+        <li><code>AttachThreadInput</code>、<code>SetForegroundWindow</code>、<code>SetFocus</code>：切换窗口焦点；</li>
+        <li><code>SendInput</code>：模拟 <code>Ctrl+C</code>、<code>Ctrl+A</code>、<code>Ctrl+V</code>。</li>
+    </ul>
+
+    <p>程序使用 <code>RegisterHotKey</code> 而不是低级键盘钩子，因为后者在部分环境中会因权限或安全软件失败。快捷键注册失败不会影响核心翻译流程，界面会显示失败状态并提示仍可手动翻译。</p>
+
+    <h3>3.6 配置持久化与安全</h3>
+
+    <p>配置文件位于项目根目录：</p>
+
+    <pre><code>WenyanTranslator/config.json</code></pre>
+
+    <p>该文件已被 <code>.gitignore</code> 排除，即使误执行 <code>git add .</code> 也不会把 API Key 放进版本历史。程序支持读取旧版本地配置作为一次性迁移来源，但不会把旧配置文件复制进仓库。</p>
+
+    <p>配置读写使用 <code>json</code>。读取时只保留已知字段，遇到损坏 JSON 或非对象数据会回退到默认值；写入时直接覆盖。配置读写的时间复杂度与字段数量成正比，字段数固定，因此可视为 <strong>O(1)</strong>。</p>
+
+    <h2>四、安装与运行</h2>
+
+    <h3>4.1 环境要求</h3>
+
+    <ul>
+        <li>Windows 10 或更高版本</li>
+        <li>Python 3.10 或更高版本</li>
+        <li>Windows 官方 Python 安装包（自带 tkinter）</li>
+    </ul>
+
+    <p>本项目不需要 <code>pip install</code>，没有第三方运行依赖。<code>requirements.txt</code> 中明确写明这一点。</p>
+
+    <h3>4.2 运行方式</h3>
+
+    <p>在项目根目录双击：</p>
+
+    <pre><code>start.bat</code></pre>
+
+    <p>或使用命令行：</p>
+
+    <pre><code>pythonw wenyan_translator.pyw</code></pre>
+
+    <p>首次启动后，在"接口设置"中填写：</p>
+
+    <ul>
+        <li>接口地址（OpenAI 兼容的 Chat Completions 地址，或可自动补全的 base URL）；</li>
+        <li>模型名；</li>
+        <li>API Key；</li>
+        <li>默认文风。</li>
+    </ul>
+
+    <p>点击"保存设置"。程序下次启动会从 <code>config.json</code> 恢复这些设置。</p>
+
+    <p>字段格式可参考 <code>examples/config.example.json</code>。示例文件故意保留空 <code>api_key</code>，不能直接用于请求；真实配置只保存在本地，不进入仓库。</p>
+
+    <h3>4.3 最小示例</h3>
+
+    <p>输入：</p>
+
+    <pre><code>我今晚不吃饭了。</code></pre>
+
+    <p>选择"浅易文言"，点击"翻译并复制"，程序会得到类似：</p>
+
+    <pre><code>吾今夕不食矣。</code></pre>
+
+    <p>并自动复制到剪贴板。回到微信或 QQ 输入框按 <code>Ctrl+V</code> 后手动发送即可。</p>
+
+    <h2>五、功能展示</h2>
+
+    <h3>5.1 主界面截图</h3>
+
+    <div class="screenshot-placeholder">
+        [请在此处插入程序运行截图]<br>
+        <small>截图应显示：接口设置区域、文风选择、原文输入框、译文输出框、状态栏提示</small>
+    </div>
+
+    <h3>5.2 四文风真实输出</h3>
+
+    <p>输入见 <code>examples/sample_input.txt</code>，以下是 2026-10-20 使用 GLM 5.3 兼容接口得到的真实输出（每次生成可能有细微差异）：</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>文风</th>
+                <th style="text-align: right;">实测耗时</th>
+                <th>输出</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>浅易文言</td>
+                <td style="text-align: right;">2.53 秒</td>
+                <td>吾今夕不食矣。依昨日会议所定，吾等下周先毕项目风险评估之事，再议立项与否。同僚言其今日告假，因子患病。</td>
+            </tr>
+            <tr>
+                <td>典雅文言</td>
+                <td style="text-align: right;">2.73 秒</td>
+                <td>吾今夕不食矣。谨依昨日会议之议，吾等来周先竟项目风险评估之事，而后定立项与否。同僚言今日告假，盖稚子抱恙故也。</td>
+            </tr>
+            <tr>
+                <td>庄重文言</td>
+                <td style="text-align: right;">3.74 秒</td>
+                <td>吾今夕不食矣。依昨日会议所决，吾等于下周先竟项目风险评估之事，而后定其立项与否。同僚言今日告假，以其子抱恙故也。</td>
+            </tr>
+            <tr>
+                <td>艰深古奥</td>
+                <td style="text-align: right;">2.91 秒</td>
+                <td>吾今夕辍飧矣。昨日之议既决：来旬吾侪当先竟项目度险之事，而后决其立与弗立。同僚言其今日告假，以稚子婴疾故也。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>完整的分段结果见 <code>examples/sample_output.txt</code>。项目同时保留真实端到端测试记录：在桌面窗口中输入"我今晚不吃饭了，明天再联系。"，点击翻译后界面状态为"已复制，可粘贴到聊天框。"，译文为"吾今夕不食矣，明日再会。"，剪贴板内容与译文一致。</p>
+
+    <h2>六、测试与结果</h2>
+
+    <h3>6.1 自动化测试</h3>
+
+    <p>运行命令：</p>
+
+    <pre><code>python -m unittest discover -s tests -v</code></pre>
+
+    <p>2026-10-22 实际运行结果：</p>
+
+    <pre><code>Ran 10 tests in 0.005s
+OK</code></pre>
+
+    <p>测试覆盖：</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>类别</th>
+                <th>覆盖内容</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>接口地址</td>
+                <td>完整地址、base URL、末尾斜杠、空白</td>
+            </tr>
+            <tr>
+                <td>文风字典</td>
+                <td>四种文风都存在、说明非空</td>
+            </tr>
+            <tr>
+                <td>正常请求</td>
+                <td>HTTP 请求体、模型名、<code>reasoning_effort=high</code>、译文去空白</td>
+            </tr>
+            <tr>
+                <td>边界情况</td>
+                <td>空译文、响应格式错误</td>
+            </tr>
+            <tr>
+                <td>异常情况</td>
+                <td>HTTP 401</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.2 手动功能测试</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>用例</th>
+                <th>操作</th>
+                <th>实际结果</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>启动</td>
+                <td>双击 <code>start.bat</code></td>
+                <td>窗口正常打开</td>
+            </tr>
+            <tr>
+                <td>保存设置</td>
+                <td>填写接口信息后点击保存</td>
+                <td>状态栏提示"设置已保存。"</td>
+            </tr>
+            <tr>
+                <td>正常翻译</td>
+                <td>输入现代文并点击"翻译并复制"</td>
+                <td>真实接口返回译文，剪贴板同步更新</td>
+            </tr>
+            <tr>
+                <td>空输入</td>
+                <td>不输入内容直接翻译</td>
+                <td>提示"请先输入要翻译的现代文。"</td>
+            </tr>
+            <tr>
+                <td>错误 Key</td>
+                <td>使用无效 Key 请求</td>
+                <td>HTTP 错误被转换为可读提示，剪贴板不被改写</td>
+            </tr>
+            <tr>
+                <td>断网/错误地址</td>
+                <td>使用不可达地址</td>
+                <td>提示无法连接接口</td>
+            </tr>
+            <tr>
+                <td>多段文本</td>
+                <td>输入三段带换行的文字</td>
+                <td>输出保留分段结构</td>
+            </tr>
+            <tr>
+                <td>四文风</td>
+                <td>分别选择四个文风</td>
+                <td>输出风格可区分，见上表</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.3 性能观察</h3>
+
+    <p>模型服务本身会受网络、排队和负载影响，不能把一次耗时当作固定指标。本项目没有使用 <code>low</code> 推理，因为实测中低推理更容易丢掉段落和风格要求；<code>medium</code> 在本机测试中反而出现过 9–24 秒的慢响应。最终统一使用 <code>reasoning_effort=high</code>，在同日四文风真实测试中约 2.5–3.7 秒完成。</p>
+
+    <h2>七、局限与改进</h2>
+
+    <h3>7.1 已知局限</h3>
+
+    <ol>
+        <li><strong>依赖外部服务</strong>：需要网络、有效的 OpenAI 兼容接口和模型配额；接口不可用时无法离线翻译。</li>
+        <li><strong>仅支持 Windows</strong>：Win32 API 部分（快捷键、窗口焦点）只在 Windows 上有效；核心翻译模块本身可以跨平台复用。</li>
+        <li><strong>只处理纯文本</strong>：不处理图片、文件、表情包、语音或富文本格式。</li>
+        <li><strong>译文质量依赖模型</strong>：古文用典和专有名词可能有误差，发送前应由用户检查。</li>
+        <li><strong>没有本地缓存</strong>：重复文本会再次请求接口，可能增加费用和时间。</li>
+    </ol>
+
+    <h3>7.2 改进方向</h3>
+
+    <ol>
+        <li>增加 SQLite 本地缓存，按"原文 + 文风 + 补充要求"缓存译文。</li>
+        <li>增加批量翻译和导出 Markdown 的功能。</li>
+        <li>提供可编辑的文风模板，让用户自定义"浅易/典雅/庄重/艰深"的具体约束。</li>
+        <li>增加请求取消、超时重试和接口健康检查。</li>
+        <li>对输出做专有名词和数字校验，必要时提示用户人工复核。</li>
+        <li>可以尝试添加快捷键，使得程序在后台运行即可进行翻译。</li>
+    </ol>
+
+    <h2>八、来源与 AI 使用声明</h2>
+
+    <p><strong>使用工具</strong>：OpenAI Codex CLI（GPT 模型）、Qoder 智能体，用于代码生成、重构、测试编写和文档排版建议。</p>
+
+    <p><strong>AI 参与的环节</strong>：</p>
+
+    <ul>
+        <li>项目结构拆分与模块接口设计；</li>
+        <li>核心代码的编写与重构；</li>
+        <li>单元测试用例编写和真实接口验收命令；</li>
+        <li>README、课程报告、演示说明和截图的整理。</li>
+    </ul>
+
+    <p><strong>本人完成的设计、取舍与验收</strong>：</p>
+
+    <ul>
+        <li>提出"把现代文转换为文言文并复制到聊天框"的选题和使用场景，明确程序只生成译文，不代替用户发送消息；</li>
+        <li>确定浅易、典雅、庄重三种基础文风，并要求增加生僻字较多的"艰深古奥"模式；</li>
+        <li>要求主界面保持可见、不设置开机自启动，并把聊天软件快捷替换限制为可选增强；</li>
+        <li>提出速度与质量兼顾的目标；AI 比较推理参数后采用 <code>reasoning_effort=high</code>，并报告四文风实测结果；</li>
+        <li>对提交范围、功能边界和密钥安全提出要求，确认仓库不包含真实 API Key。</li>
+    </ul>
+
+    <p><strong>代表性协作记录</strong>：</p>
+
+    <ol>
+        <li><strong>界面与启动方式调整</strong>：本人明确要求主界面保持可见、不后台隐藏、不设置开机自启动。AI 据此调整启动和窗口行为，并把"翻译并复制 + 手动粘贴"保留为不依赖聊天软件兼容性的核心流程。</li>
+        <li><strong>新增艰深文风</strong>：原方案只有浅易、典雅、庄重三种文风。本人要求增加晦涩、生僻字较多的模式，AI 在 <code>STYLES</code> 中增加"艰深古奥"说明、补充样例和测试，最终形成四种可比较的输出。</li>
+        <li><strong>速度与质量的取舍</strong>：本人反馈部分请求耗时较长，同时要求不要牺牲质量。AI 对不同推理配置做对比记录后采用 <code>reasoning_effort=high</code>，并在报告中保留真实耗时和"服务负载会使耗时波动"的限制，而不是承诺固定速度。</li>
+    </ol>
+
+    <p><strong>验证方法</strong>：AI 在本人要求下运行 <code>unittest</code>、真实接口和桌面端流程；本人确认功能范围、文风设置和验收目标。代码、测试输出、四文风样例和截图均来自本次实际运行，没有编造运行记录。提交者仍应亲自复验并能够解释关键代码。</p>
+
+    <p><strong>引用与复用的外部资源</strong>：无。使用 Python 标准库、tkinter 和 Windows 系统 API；模型接口的使用遵守所用服务的条款。</p>
+</body>
+</html>
