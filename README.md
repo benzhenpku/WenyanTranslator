@@ -35,34 +35,35 @@
 
 ## 三、课程知识与核心设计
 
-### 3.1 项目结构
+### 3.1 模块结构
+
+项目刻意把核心逻辑和界面分开，便于测试和复用：
 
 ```text
 WenyanTranslator/
-├── wenyan_translator.pyw   # 主程序（GUI + 核心逻辑）
-├── config.json             # 本地配置（已加入 .gitignore，不提交到仓库）
-├── start.bat               # 双击启动脚本
-├── requirements.txt        # 依赖说明（本项目无第三方依赖）
-── LICENSE                 # MIT 许可证
-── .gitignore              # 排除 config.json、hotkey.log 等
-├── examples/
-│   ├── sample_input.txt    # 示例输入
-│   ├── sample_output.txt   # 四文风真实输出样例
-│   └── config.example.json # 不含 API Key 的配置字段示例
+├── src/
+│   ├── core.py                 # 提示词、接口地址规范化、HTTP 调用与响应解析
+│   ├── config_store.py         # 配置读写、日志、旧配置迁移
+│   ├── win32_utils.py          # Windows 窗口、键盘输入和线程消息工具
+│   ├── gui.py                  # tkinter 界面、线程协调、剪贴板与快捷替换
+│   ├── wenyan_translator.pyw   # 极薄的启动入口
+│   └── __init__.py
 ├── tests/
-│   └── test_wenyan_translator.py  # 接口地址、提示词、异常与边界测试
-└── README.md               # 本文件
+│   └── test_wenyan_translator.py    # 接口、提示词、异常、配置与边界测试
+├── examples/
+│   ├── sample_input.txt
+│   ├── sample_output.txt       # 真实接口运行得到的四文风样例
+│   └── config.example.json     # 不含 API Key 的配置字段示例
+── docs/
+│   └── screenshot_main.png     # 实际运行截图
+── README.md
+├── requirements.txt
+── start.bat
+├── LICENSE
+└── .gitignore
 ```
 
-程序采用单文件组织，但内部按职责分为几个清晰的部分：
-
-- **提示词与文风**：`STYLES` 字典和 `SYSTEM_PROMPT` 常量，负责构造给模型的指令。
-- **HTTP 请求与响应解析**：`request_translation()` 和 `normalize_endpoint()`，负责调用接口、解析 JSON、统一异常。
-- **配置读写**：`load_config()` 和 `write_config()`，负责从 `config.json` 读取和保存设置。
-- **GUI 界面**：`WenyanTranslatorApp` 类，负责界面布局、按钮回调、线程调度。
-- **Windows API 交互**：`send_key_combo()`、`activate_window()` 等，负责快捷键注册和窗口焦点控制。
-
-这种"单文件内部分层"的方式避免了"所有逻辑都写在按钮回调里"的常见问题，核心翻译逻辑不依赖 tkinter，便于理解和测试。
+`core.py` 不依赖 tkinter，因此可以单独导入和测试；GUI 只负责采集配置、调度后台任务和展示结果。这一划分避免了"所有逻辑都写在按钮回调里"的常见问题。
 
 ### 3.2 提示词与文风选择
 
@@ -179,7 +180,13 @@ pythonw wenyan_translator.pyw
 
 ## 五、功能展示
 
-### 5.1 四文风真实输出
+### 5.1 主界面截图
+
+![文言发信助手主界面](docs/screenshot_main.png)
+
+截图展示了程序实际运行时的界面。API Key 在界面中以圆点遮罩显示，没有在仓库中保存或展示真实密钥。
+
+### 5.2 四文风真实输出
 
 输入见 `examples/sample_input.txt`，以下是 2026-10-20 使用 GLM 5.3 兼容接口得到的真实输出（每次生成可能有细微差异）：
 
@@ -205,7 +212,7 @@ python -m unittest discover -s tests -v
 2026-10-22 实际运行结果：
 
 ```text
-Ran 10 tests in 0.005s
+Ran 17 tests in 0.018s
 OK
 ```
 
@@ -216,8 +223,10 @@ OK
 | 接口地址 | 完整地址、base URL、末尾斜杠、空白 |
 | 文风字典 | 四种文风都存在、说明非空 |
 | 正常请求 | HTTP 请求体、模型名、`reasoning_effort=high`、译文去空白 |
-| 边界情况 | 空译文、响应格式错误 |
-| 异常情况 | HTTP 401 |
+| 边界情况 | 空译文、空输入、缺少 `choices`、非法 JSON |
+| 异常情况 | HTTP 401、网络不可达、响应格式异常 |
+| 配置 | 默认值、写入后读取 |
+| 系统提示词 | 只返回译文、保留人名地名、保留换行 |
 
 ### 6.2 手动功能测试
 

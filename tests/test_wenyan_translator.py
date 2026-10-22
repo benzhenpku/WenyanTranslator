@@ -1,21 +1,23 @@
-"""基础功能测试：接口地址规范化、提示词构造、异常处理。"""
+"""测试：接口地址规范化、提示词构造、异常处理、配置读写。"""
 
-import sys
+import json
 import os
+import sys
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
-import json
 
-# 把项目根目录加入 path，以便导入
+# 把项目根目录加入 path，以便导入 src 包
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from wenyan_translator import (
+from src.core import (
     normalize_endpoint,
     STYLES,
     SYSTEM_PROMPT,
     TranslationError,
     request_translation,
 )
+from src.config_store import load_config, write_config
 
 
 class TestNormalizeEndpoint(unittest.TestCase):
@@ -73,7 +75,7 @@ class TestRequestTranslation(unittest.TestCase):
         mock_resp.__exit__ = MagicMock(return_value=False)
         return mock_resp
 
-    @patch("wenyan_translator.urllib.request.urlopen")
+    @patch("src.core.urllib.request.urlopen")
     def test_正常请求返回译文(self, mock_urlopen):
         mock_urlopen.return_value = self._make_response("  吾今夕不食矣。  ")
         result = request_translation(
@@ -86,7 +88,25 @@ class TestRequestTranslation(unittest.TestCase):
         )
         self.assertEqual(result, "吾今夕不食矣。")
 
-    @patch("wenyan_translator.urllib.request.urlopen")
+    @patch("src.core.urllib.request.urlopen")
+    def test_请求体包含正确字段(self, mock_urlopen):
+        mock_urlopen.return_value = self._make_response("译文")
+        request_translation(
+            "https://api.example.com",
+            "test-model",
+            "test-key",
+            "典雅文言",
+            "保留人名",
+            "你好",
+        )
+        call_args = mock_urlopen.call_args
+        request_obj = call_args[0][0]
+        body = json.loads(request_obj.data.decode("utf-8"))
+        self.assertEqual(body["model"], "test-model")
+        self.assertEqual(body["reasoning_effort"], "high")
+        self.assertEqual(len(body["messages"]), 2)
+
+    @patch("src.core.urllib.request.urlopen")
     def test_空译文抛出异常(self, mock_urlopen):
         mock_urlopen.return_value = self._make_response("   ")
         with self.assertRaises(TranslationError):
@@ -95,7 +115,7 @@ class TestRequestTranslation(unittest.TestCase):
                 "浅易文言", "", "测试",
             )
 
-    @patch("wenyan_translator.urllib.request.urlopen")
+    @patch("src.core.urllib.request.urlopen")
     def test_响应格式错误抛出异常(self, mock_urlopen):
         body = json.dumps({"error": "bad"}).encode("utf-8")
         mock_resp = MagicMock()
@@ -109,21 +129,85 @@ class TestRequestTranslation(unittest.TestCase):
                 "浅易文言", "", "测试",
             )
 
-    @patch("wenyan_translator.urllib.request.urlopen")
+    @patch("src.core.urllib.request.urlopen")
     def test_http_401_抛出异常(self, mock_urlopen):
         import urllib.error
         error_body = json.dumps({"error": {"message": "invalid key"}}).encode("utf-8")
-        mock_urlopen.side_effect = urllib.error.HTTPError(
+        http_error = urllib.error.HTTPError(
             "https://api.example.com/chat/completions",
             401, "Unauthorized", {}, None,
         )
-        mock_urlopen.side_effect.read = lambda: error_body
+        http_error.read = lambda: error_body
+        mock_urlopen.side_effect = http_error
         with self.assertRaises(TranslationError) as ctx:
             request_translation(
                 "https://api.example.com", "test-model", "bad-key",
                 "浅易文言", "", "测试",
             )
         self.assertIn("401", str(ctx.exception))
+
+    @patch("src.core.urllib.request.urlopen")
+    def test_网络不可达抛出异常(self, mock_urlopen):
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.URLError("connection refused")
+        with self.assertRaises(TranslationError) as ctx:
+            request_translation(
+                "https://api.example.com", "test-model", "test-key",
+                "浅易文言", "", "测试",
+            )
+        self.assertIn("无法连接", str(ctx.exception))
+
+
+class TestConfigStore(unittest.TestCase):
+    """测试配置读写。"""
+
+    def test_默认配置(self):
+        config = load_config()
+        self.assertIn("api_url", config)
+        self.assertIn("model", config)
+        self.assertIn("api_key", config)
+        self.assertIn("default_style", config)
+
+    def test_写入后读取一致(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+            tmp_path = f.name
+
+        try:
+            test_config = {
+                "api_url": "https://test.example.com/chat/completions",
+                "model": "test-model",
+                "api_key": "test-key-123",
+                "default_style": "典雅文言",
+                "default_requirements": "保留数字",
+            }
+            write_config.__wrapped__ = write_config  # avoid issues
+
+            # 临时替换 CONFIG_PATH
+            import src.config_store as cs
+            original_path = cs.CONFIG_PATH
+            cs.CONFIG_PATH = type("P", (), {"open": lambda self, mode, encoding: open(tmp_path, mode, encoding=encoding), "exists": lambda self: True})()
+
+            write_config(test_config)
+
+            cs.CONFIG_PATH = type("P", (), {"open": lambda self, mode, encoding: open(tmp_path, mode, encoding=encoding), "exists": lambda self: True})()
+            loaded = load_config()
+
+            cs.CONFIG_PATH = original_path
+        finally:
+            os.unlink(tmp_path)
+
+
+class TestSystemPrompt(unittest.TestCase):
+    """测试系统提示词包含关键约束。"""
+
+    def test_要求只返回译文(self):
+        self.assertIn("只返回译文", SYSTEM_PROMPT)
+
+    def test_要求保留人名地名(self):
+        self.assertIn("人名", SYSTEM_PROMPT)
+
+    def test_要求保留换行(self):
+        self.assertIn("换行", SYSTEM_PROMPT)
 
 
 if __name__ == "__main__":

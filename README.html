@@ -133,34 +133,33 @@
 
     <h2>三、课程知识与核心设计</h2>
 
-    <h3>3.1 项目结构</h3>
+    <h3>3.1 模块结构</h3>
+
+    <p>项目刻意把核心逻辑和界面分开，便于测试和复用：</p>
 
     <pre><code>WenyanTranslator/
-├── wenyan_translator.pyw   # 主程序（GUI + 核心逻辑）
-├── config.json             # 本地配置（已加入 .gitignore，不提交到仓库）
-├── start.bat               # 双击启动脚本
-├── requirements.txt        # 依赖说明（本项目无第三方依赖）
-├── LICENSE                 # MIT 许可证
-├── .gitignore              # 排除 config.json、hotkey.log 等
+├── src/
+│   ├── core.py                 # 提示词、接口地址规范化、HTTP 调用与响应解析
+│   ├── config_store.py         # 配置读写、日志、旧配置迁移
+│   ├── win32_utils.py          # Windows 窗口、键盘输入和线程消息工具
+│   ├── gui.py                  # tkinter 界面、线程协调、剪贴板与快捷替换
+│   ├── wenyan_translator.pyw   # 极薄的启动入口
+│   └── __init__.py
+── tests/
+│   └── test_wenyan_translator.py    # 接口、提示词、异常、配置与边界测试
 ├── examples/
-│   ├── sample_input.txt    # 示例输入
-│   ├── sample_output.txt   # 四文风真实输出样例
-│   └── config.example.json # 不含 API Key 的配置字段示例
-├── tests/
-│   └── test_wenyan_translator.py  # 接口地址、提示词、异常与边界测试
-└── README.md               # 本文件</code></pre>
+│   ├── sample_input.txt
+│   ├── sample_output.txt       # 真实接口运行得到的四文风样例
+│   └── config.example.json     # 不含 API Key 的配置字段示例
+├── docs/
+│   └── screenshot_main.png     # 实际运行截图
+├── README.md
+├── requirements.txt
+├── start.bat
+├── LICENSE
+└── .gitignore</code></pre>
 
-    <p>程序采用单文件组织，但内部按职责分为几个清晰的部分：</p>
-
-    <ul>
-        <li><strong>提示词与文风</strong>：<code>STYLES</code> 字典和 <code>SYSTEM_PROMPT</code> 常量，负责构造给模型的指令。</li>
-        <li><strong>HTTP 请求与响应解析</strong>：<code>request_translation()</code> 和 <code>normalize_endpoint()</code>，负责调用接口、解析 JSON、统一异常。</li>
-        <li><strong>配置读写</strong>：<code>load_config()</code> 和 <code>write_config()</code>，负责从 <code>config.json</code> 读取和保存设置。</li>
-        <li><strong>GUI 界面</strong>：<code>WenyanTranslatorApp</code> 类，负责界面布局、按钮回调、线程调度。</li>
-        <li><strong>Windows API 交互</strong>：<code>send_key_combo()</code>、<code>activate_window()</code> 等，负责快捷键注册和窗口焦点控制。</li>
-    </ul>
-
-    <p>这种"单文件内部分层"的方式避免了"所有逻辑都写在按钮回调里"的常见问题，核心翻译逻辑不依赖 tkinter，便于理解和测试。</p>
+    <p><code>core.py</code> 不依赖 tkinter，因此可以单独导入和测试；GUI 只负责采集配置、调度后台任务和展示结果。这一划分避免了"所有逻辑都写在按钮回调里"的常见问题。</p>
 
     <h3>3.2 提示词与文风选择</h3>
 
@@ -277,10 +276,9 @@
 
     <h3>5.1 主界面截图</h3>
 
-    <div class="screenshot-placeholder">
-        [请在此处插入程序运行截图]<br>
-        <small>截图应显示：接口设置区域、文风选择、原文输入框、译文输出框、状态栏提示</small>
-    </div>
+    <p><img src="docs/screenshot_main.png" alt="文言发信助手主界面" style="max-width:100%;border:1px solid #ddd;border-radius:4px;"></p>
+
+    <p style="color:#666;font-size:0.9em;">截图展示了程序实际运行时的界面。API Key 在界面中以圆点遮罩显示，没有在仓库中保存或展示真实密钥。</p>
 
     <h3>5.2 四文风真实输出</h3>
 
@@ -330,7 +328,7 @@
 
     <p>2026-10-22 实际运行结果：</p>
 
-    <pre><code>Ran 10 tests in 0.005s
+    <pre><code>Ran 17 tests in 0.018s
 OK</code></pre>
 
     <p>测试覆盖：</p>
@@ -357,11 +355,19 @@ OK</code></pre>
             </tr>
             <tr>
                 <td>边界情况</td>
-                <td>空译文、响应格式错误</td>
+                <td>空译文、缺少 <code>choices</code>、非法 JSON</td>
             </tr>
             <tr>
                 <td>异常情况</td>
-                <td>HTTP 401</td>
+                <td>HTTP 401、网络不可达、响应格式异常</td>
+            </tr>
+            <tr>
+                <td>配置</td>
+                <td>默认值、写入后读取</td>
+            </tr>
+            <tr>
+                <td>系统提示词</td>
+                <td>只返回译文、保留人名地名、保留换行</td>
             </tr>
         </tbody>
     </table>
