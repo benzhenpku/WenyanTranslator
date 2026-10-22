@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概况
 
-WenyanTranslator（文言发信助手）：Windows 桌面 Tkinter 工具，调用 OpenAI 兼容的 `/chat/completions` 接口把现代汉语译为文言文；可选在微信/QQ 中选中文字后按全局快捷键 `Ctrl+Alt+M` 一键替换。仅用 Python 标准库（无需 pip 安装），目标环境 Windows 10+、Python 3.10+。这是课程作业项目，`README.md` 本身就是提交报告（含测试结果、AI 使用声明），`README.html` 是它的网页版——改功能时要同步更新 README 中的描述、目录树和测试覆盖表，并提醒用户重新生成 `README.html`。
+WenyanTranslator（文言发信助手）：Windows 桌面 Tkinter 工具，调用 OpenAI 兼容的 `/chat/completions` 接口把现代汉语译为文言文；可选在微信/QQ 中选中文字后按全局快捷键 `Ctrl+Alt+M` 一键替换。仅用 Python 标准库（无需 pip 安装），目标环境 Windows 10+、Python 3.10+。这是课程作业项目，`README.md` 本身就是提交报告（含测试结果、AI 使用声明），`README.html` 是它的网页版——改功能时要同步更新 README 中的描述、目录树和测试覆盖表，并重新生成 `README.html`：保留其前 99 行手写模板（样式、打印提示、作者信息框），正文由 pandoc 从 README 的"## 一、"开始转换：
+
+```bash
+sed -n '/^## 一、/,$p' README.md | pandoc -f gfm -t html5 --no-highlight --wrap=none -o body.html
+{ sed -n 1,99p README.html; cat body.html; printf '</body>\n</html>\n'; } > README.new.html && mv README.new.html README.html
+```
+
+截图 `<img>` 需手动补回 `style="max-width:100%;border:1px solid #ddd;border-radius:4px;"`。
 
 ## 常用命令
 
