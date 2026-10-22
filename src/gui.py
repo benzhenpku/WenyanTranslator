@@ -8,11 +8,10 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from tkinter.constants import BOTH, END, LEFT, RIGHT, X, Y
 
-from src.core import STYLES, TranslationError, request_translation
+from src.core import STYLES, request_translation
 from src.config_store import load_config, load_ccswitch_provider, write_config, write_log
 from src.win32_utils import (
     GUITHREADINFO,
-    INPUT,
     MSG,
     VK_A,
     VK_C,
@@ -109,7 +108,7 @@ class WenyanTranslatorApp:
         )
         self.result_text.pack(fill=BOTH, expand=True)
 
-        self.status_var = tk.StringVar(value="请输入现代文，然后点击"翻译并复制"。")
+        self.status_var = tk.StringVar(value="请输入现代文，然后点击“翻译并复制”。")
         status_label = ttk.Label(main, textvariable=self.status_var, wraplength=700, foreground="#555555")
         status_label.pack(fill=X, pady=(10, 0))
 
@@ -171,7 +170,7 @@ class WenyanTranslatorApp:
             self.hotkey_registered = bool(registered)
         write_log(f"启动全局热键注册: {self.hotkey_registered}, 错误码 {ctypes.GetLastError()}")
         if not registered:
-            self.root.after(0, lambda: self.set_status("后台模式已启动，但全局热键注册失败。"))
+            self.root.after(0, lambda: self.set_status("全局热键 Ctrl+Alt+M 注册失败，仍可手动翻译。"))
             return
 
         message = MSG()
@@ -529,8 +528,6 @@ class WenyanTranslatorApp:
             self.root.clipboard_append(self.clipboard_before_replacement)
             self.root.update()
             self.clipboard_before_replacement = None
-        if self.quick_mode:
-            self.root.deiconify()
         self.set_status("自动替换完成。请检查聊天框后发送。")
         write_log("自动替换：完成")
 

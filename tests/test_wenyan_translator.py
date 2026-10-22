@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # 把项目根目录加入 path，以便导入 src 包
@@ -162,38 +163,28 @@ class TestConfigStore(unittest.TestCase):
     """测试配置读写。"""
 
     def test_默认配置(self):
-        config = load_config()
+        # 指向不存在的文件，避免读到本机真实的 config.json
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch("src.config_store.CONFIG_PATH", Path(tmp_dir) / "config.json"):
+                config = load_config()
+        self.assertEqual(config["api_key"], "")
+        self.assertEqual(config["default_style"], "浅易文言")
         self.assertIn("api_url", config)
         self.assertIn("model", config)
-        self.assertIn("api_key", config)
-        self.assertIn("default_style", config)
 
     def test_写入后读取一致(self):
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
-            tmp_path = f.name
-
-        try:
-            test_config = {
-                "api_url": "https://test.example.com/chat/completions",
-                "model": "test-model",
-                "api_key": "test-key-123",
-                "default_style": "典雅文言",
-                "default_requirements": "保留数字",
-            }
-
-            # 临时替换 CONFIG_PATH
-            import src.config_store as cs
-            original_path = cs.CONFIG_PATH
-            cs.CONFIG_PATH = type("P", (), {"open": lambda self, mode, encoding: open(tmp_path, mode, encoding=encoding), "exists": lambda self: True})()
-
-            write_config(test_config)
-
-            cs.CONFIG_PATH = type("P", (), {"open": lambda self, mode, encoding: open(tmp_path, mode, encoding=encoding), "exists": lambda self: True})()
-            loaded = load_config()
-
-            cs.CONFIG_PATH = original_path
-        finally:
-            os.unlink(tmp_path)
+        test_config = {
+            "api_url": "https://test.example.com/chat/completions",
+            "model": "test-model",
+            "api_key": "test-key-123",
+            "default_style": "典雅文言",
+            "default_requirements": "保留数字",
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch("src.config_store.CONFIG_PATH", Path(tmp_dir) / "config.json"):
+                write_config(test_config)
+                loaded = load_config()
+        self.assertEqual(loaded, test_config)
 
 
 class TestSystemPrompt(unittest.TestCase):

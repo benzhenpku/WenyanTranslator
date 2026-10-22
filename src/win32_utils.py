@@ -13,8 +13,6 @@ VK_V = 0x56
 KEYEVENTF_KEYUP = 0x0002
 
 if sys.platform == "win32":
-    KBDLLHOOKSTRUCT = ctypes.c_void_p
-
     class POINT(ctypes.Structure):
         _fields_ = [
             ("x", ctypes.c_long),
@@ -51,13 +49,6 @@ if sys.platform == "win32":
             ("time", ctypes.c_ulong),
             ("pt", POINT),
         ]
-
-    LowLevelKeyboardProc = ctypes.WINFUNCTYPE(
-        ctypes.c_long,
-        ctypes.c_int,
-        ctypes.c_ulong,
-        ctypes.POINTER(KBDLLHOOKSTRUCT),
-    )
 
     class KEYBDINPUT(ctypes.Structure):
         _fields_ = [
