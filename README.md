@@ -46,8 +46,8 @@ WenyanTranslator/
 │   ├── config_store.py         # 配置读写、日志、旧配置迁移
 │   ├── win32_utils.py          # Windows 窗口、键盘输入和线程消息工具
 │   ├── gui.py                  # tkinter 界面、线程协调、剪贴板与快捷替换
-│   ├── wenyan_translator.pyw   # 极薄的启动入口
-│   └── __init__.py
+│   ── __init__.py
+├── wenyan_translator.pyw       # 极薄的启动入口
 ├── tests/
 │   └── test_wenyan_translator.py    # 接口、提示词、异常、配置与边界测试
 ├── examples/
@@ -99,7 +99,7 @@ WenyanTranslator/
 一次翻译可能需要数秒。如果把 HTTP 调用直接放在 tkinter 主线程，窗口会卡住，用户无法拖动或点击。程序采用：
 
 - `threading.Thread` 在后台执行 HTTP 请求和 JSON 解析；
-- tkinter 的 `after(100, ...)` 在主线程轮询并更新界面；
+- `tkinter` 的 `after(...)` 在主线程轮询并更新界面；
 - 请求完成后由主线程更新文本框和剪贴板。
 
 这样 GUI 的 Tk 对象始终只在主线程中访问，避免跨线程直接操作界面造成随机崩溃。快捷替换时，全局热键线程也只把"热键被按下"的事件放入队列，再由主线程处理窗口和剪贴板。

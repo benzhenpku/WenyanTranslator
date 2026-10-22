@@ -180,7 +180,6 @@ class TestConfigStore(unittest.TestCase):
                 "default_style": "典雅文言",
                 "default_requirements": "保留数字",
             }
-            write_config.__wrapped__ = write_config  # avoid issues
 
             # 临时替换 CONFIG_PATH
             import src.config_store as cs

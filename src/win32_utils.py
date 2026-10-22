@@ -65,7 +65,7 @@ if sys.platform == "win32":
             ("wScan", ctypes.c_ushort),
             ("dwFlags", ctypes.c_ulong),
             ("time", ctypes.c_ulong),
-            ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+            ("dwExtraInfo", ctypes.c_void_p),
         ]
 
     class _INPUTUNION(ctypes.Union):

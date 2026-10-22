@@ -40,7 +40,7 @@ def normalize_endpoint(api_url):
 def request_translation(api_url, model, api_key, style, requirements, source_text):
     """调用 OpenAI 兼容接口完成翻译，返回译文字符串。"""
     endpoint = normalize_endpoint(api_url)
-    style_description = STYLES[style]
+    style_description = STYLES.get(style, STYLES["浅易文言"])
 
     user_prompt = f"""文风：{style}
 文风说明：{style_description}
